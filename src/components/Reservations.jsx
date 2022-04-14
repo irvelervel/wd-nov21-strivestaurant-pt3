@@ -4,13 +4,20 @@
 // 1) we're going to create a state variable for the reservations that are going to come from the endpoint
 // 2) then we're going to do the fetch() on the endpoint
 // 3) we're going to save the result of the fetch() in the state variable
+// 4) we bound our JSX to map the content of the state variable, initially we don't see any list item because the array is []
+// 5) but when the fetch() finishes, because we're setting the state, render() fires again!
+// 6) it will go over the entire JSX, this time finding that reservations in the state is NOT empty anymore!
+// 7) and so the second invocation of render(), the one that happens because of our setState, generates the dynamic list items
+// out of the reservations array
 
 import { Component } from 'react'
-import { ListGroup } from 'react-bootstrap'
+import { ListGroup, Spinner, Alert } from 'react-bootstrap'
 
 class Reservations extends Component {
   state = {
     reservations: [],
+    isLoading: true,
+    isError: false,
   }
 
   componentDidMount = () => {
@@ -39,28 +46,49 @@ class Reservations extends Component {
         console.log('data is', data)
         this.setState({
           reservations: data,
+          isLoading: false,
         })
       } else {
-        alert('aww snap, an error happened')
+        // here is when I contact the server, but I get an error back
+        // alert('aww snap, an error happened')
+        this.setState({
+          isLoading: false,
+          isError: true,
+        })
       }
     } catch (error) {
       console.log(error)
+      // this is for a more generic error, maybe an internet issue
+      this.setState({
+        isLoading: false,
+        isError: true,
+      })
     }
   }
 
   render = () => {
     // render() is a LIFECYCLE METHOD
     // it's the first one a beginner comes in contact with
+
+    // render() FIRES AGAIN every time the state changes OR the PROPS change!
     console.log("I'm the render method!")
     return (
       <>
         <h3>EXISTING RESERVATIONS</h3>
+        {this.state.isLoading && (
+          // the && makes the Spinner appear when isLoading is true
+          <Spinner animation="border" variant="success" />
+        )}
+        {this.state.isError && (
+          <Alert variant="danger">Aww snap, we got an error 😣</Alert>
+        )}
         <ListGroup>
-          <ListGroup.Item>Cras justo odio</ListGroup.Item>
-          <ListGroup.Item>Dapibus ac facilisis in</ListGroup.Item>
-          <ListGroup.Item>Morbi leo risus</ListGroup.Item>
-          <ListGroup.Item>Porta ac consectetur ac</ListGroup.Item>
-          <ListGroup.Item>Vestibulum at eros</ListGroup.Item>
+          {/* how many of these will be rendered just as the page loads? */}
+          {this.state.reservations.map((reservation) => (
+            <ListGroup.Item key={reservation._id}>
+              {reservation.name}
+            </ListGroup.Item>
+          ))}
         </ListGroup>
       </>
     )
